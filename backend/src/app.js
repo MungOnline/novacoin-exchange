@@ -71,11 +71,17 @@ app.use('/api', (req, res, next) => {
 });
 
 // ============ STATIC FILES ============
-const uploadsDir = process.env.UPLOAD_DIR || path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
+// On Vercel, /var/task is read-only — use /tmp for uploads
+const UPLOAD_DIR = process.env.UPLOAD_DIR || 
+  (process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, '..', 'uploads'));
+try {
+  if (!fs.existsSync(UPLOAD_DIR)) {
+    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+  }
+} catch (e) {
+  console.warn('⚠️ Cannot create uploads directory:', e.message);
 }
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(UPLOAD_DIR));
 
 // ============ ROUTES ============
 const authRoutes = require('./routes/auth');
