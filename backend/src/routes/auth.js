@@ -202,8 +202,12 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+    console.error('Login error:', err.message, err.stack);
+    try {
+      res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ', detail: err.message });
+    } catch (e2) {
+      console.error('Error sending response:', e2.message);
+    }
   }
 });
 
