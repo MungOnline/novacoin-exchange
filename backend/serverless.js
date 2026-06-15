@@ -27,6 +27,7 @@ async function initialize() {
       console.log('🚀 Initializing NovaCoin API for Vercel...');
       await initializeDatabase();
       await seedChartData(prepare, saveDatabase);
+      await seedAdminUsers(prepare, saveDatabase);
       await marketEngine.init(prepare, null, saveDatabase);
       initialized = true;
       console.log('✅ NovaCoin API initialized');
@@ -38,6 +39,65 @@ async function initialize() {
   })();
   
   return initPromise;
+}
+
+async function seedAdminUsers(prepare, saveDatabase) {
+  try {
+    // Check if admin already exists
+    const existing = await prepare("SELECT id FROM users WHERE email = ?").get('admin@novacoin.io');
+    if (existing) {
+      console.log('👤 Admin user already exists, skipping seed');
+      return;
+    }
+
+    const bcrypt = require('bcryptjs');
+    const { v4: uuidv4 } = require('uuid');
+    
+    // Create admin user
+    const adminId = uuidv4();
+    const hashedPassword = await bcrypt.hash('Admin@123456', 10);
+    const now = new Date().toISOString();
+    
+    await prepare(`
+      INSERT INTO users (id, email, password, full_name, is_admin, email_verified, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, 1, ?, ?)
+    `).run(adminId, 'admin@novacoin.io', hashedPassword, 'Admin', now, now);
+    
+    // Create wallets for admin (THB 100,000,000 and NVC 5,000,000)
+    await prepare(`
+      INSERT INTO wallets (id, user_id, currency, balance, locked, created_at, updated_at)
+      VALUES (?, ?, 'THB', 100000000, 0, ?, ?)
+    `).run(uuidv4(), adminId, now, now);
+    
+    await prepare(`
+      INSERT INTO wallets (id, user_id, currency, balance, locked, created_at, updated_at)
+      VALUES (?, ?, 'NVC', 5000000, 0, ?, ?)
+    `).run(uuidv4(), adminId, now, now);
+    
+    // Create MungOnline admin user
+    const mungId = uuidv4();
+    const mungHashed = await bcrypt.hash('54321T_tt', 10);
+    
+    await prepare(`
+      INSERT INTO users (id, email, password, full_name, is_admin, email_verified, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, 1, ?, ?)
+    `).run(mungId, 'mungonline@novacoin.io', mungHashed, 'MungOnline', now, now);
+    
+    await prepare(`
+      INSERT INTO wallets (id, user_id, currency, balance, locked, created_at, updated_at)
+      VALUES (?, ?, 'THB', 10000000, 0, ?, ?)
+    `).run(uuidv4(), mungId, now, now);
+    
+    await prepare(`
+      INSERT INTO wallets (id, user_id, currency, balance, locked, created_at, updated_at)
+      VALUES (?, ?, 'NVC', 5000000, 0, ?, ?)
+    `).run(uuidv4(), mungId, now, now);
+    
+    saveDatabase();
+    console.log('👤 Admin users seeded successfully');
+  } catch (e) {
+    console.error('Seed admin error:', e.message);
+  }
 }
 
 async function seedChartData(prepare, saveDatabase) {
