@@ -1,0 +1,35 @@
+# NovaCoin Exchange - Backend API
+# Deploy config for Render (https://render.com)
+# Free tier: Node.js web service
+# Note: Free tier has NO persistent disk. SQLite data resets on restart.
+#       For production data persistence, upgrade to Starter ($7/mo) or add Supabase.
+
+services:
+  - type: web
+    name: novacoin-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node src/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_PATH
+        value: ./data/novacoin.db
+      - key: UPLOAD_DIR
+        value: ./uploads
+      - key: FRONTEND_URL
+        value: https://novacoin-exchange.vercel.app
+      - key: ADMIN_EMAIL
+        value: admin@novacoin.io
+      - key: ADMIN_PASSWORD
+        value: Admin@123456
+      # Google OAuth — set these in Render dashboard after deploy
+      # - key: GOOGLE_CLIENT_ID
+      #   value: your_google_client_id
+      # - key: GOOGLE_CLIENT_SECRET
+      #   value: your_google_client_secret

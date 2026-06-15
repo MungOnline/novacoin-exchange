@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="rim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6ee7b7"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <radialGradient id="coin" cx="36%" cy="30%" r="65%">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="25%" stop-color="#34d399"/>
+      <stop offset="60%" stop-color="#059669"/>
+      <stop offset="100%" stop-color="#064e3b"/>
+    </radialGradient>
+    <radialGradient id="shine" cx="28%" cy="22%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <!-- Outer rim -->
+  <circle cx="64" cy="64" r="62" fill="url(#rim)"/>
+  <!-- Inner rim highlight -->
+  <circle cx="64" cy="64" r="58" fill="none" stroke="#6ee7b7" stroke-width="1" opacity="0.4"/>
+  <!-- Inner coin -->
+  <circle cx="64" cy="64" r="56" fill="url(#coin)"/>
+  <!-- Decorative rings -->
+  <circle cx="64" cy="64" r="48" fill="none" stroke="#6ee7b7" stroke-width="0.8" opacity="0.2"/>
+  <circle cx="64" cy="64" r="54" fill="none" stroke="#34d399" stroke-width="0.5" stroke-dasharray="2 4" opacity="0.25"/>
+  <!-- Shine -->
+  <circle cx="64" cy="64" r="56" fill="url(#shine)"/>
+  <!-- Star burst -->
+  <g opacity="0.35" filter="url(#glow)">
+    <path d="M64 28 C67 58 64 66 75 70 C64 66 61 58 64 28Z" fill="#a7f3d0"/>
+    <path d="M64 100 C61 70 64 62 53 58 C64 62 67 70 64 100Z" fill="#a7f3d0"/>
+    <path d="M28 64 C58 61 66 64 70 53 C66 64 58 67 28 64Z" fill="#a7f3d0"/>
+    <path d="M100 64 C70 67 62 64 58 75 C62 64 70 61 100 64Z" fill="#a7f3d0"/>
+  </g>
+  <!-- Stylized N -->
+  <path d="M44 46 L44 82 L50 82 L50 62 L66 82 L84 82 L84 46 L78 46 L78 66 L62 46 Z" fill="#ffffff" opacity="0.95" filter="url(#glow)"/>
+  <!-- Sparkles -->
+  <circle cx="36" cy="52" r="2" fill="#a7f3d0" opacity="0.6" filter="url(#glow)"/>
+  <circle cx="92" cy="50" r="1.8" fill="#a7f3d0" opacity="0.5" filter="url(#glow)"/>
+  <circle cx="34" cy="74" r="1.5" fill="#a7f3d0" opacity="0.4"/>
+  <circle cx="94" cy="76" r="1.2" fill="#a7f3d0" opacity="0.3"/>
+</svg>
