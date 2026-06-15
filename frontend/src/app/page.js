@@ -13,27 +13,13 @@ export default function HomePage() {
   const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState(null);
   const [priceHistory, setPriceHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selectedInterval, setSelectedInterval] = useState('7d');
   const mountedRef = useRef(true);
-  const loadingRef = useRef(loading); // ref to avoid stale closure in timeout
-
-  // Keep loadingRef in sync with loading state
-  useEffect(() => {
-    loadingRef.current = loading;
-  }, [loading]);
 
   useEffect(() => {
     mountedRef.current = true;
-
-    const timeoutId = setTimeout(() => {
-      if (mountedRef.current && loadingRef.current) {
-        console.warn('⚠️ Homepage data loading timed out — forcing load complete');
-        setLoading(false);
-        setLoadError(true);
-      }
-    }, 15000); // 15 second safety timeout
 
     loadData();
 
@@ -44,7 +30,6 @@ export default function HomePage() {
 
     return () => {
       mountedRef.current = false;
-      clearTimeout(timeoutId);
       clearInterval(priceInterval);
       clearInterval(chartInterval);
     };
@@ -65,9 +50,7 @@ export default function HomePage() {
       if (!mountedRef.current) return;
       setLoadError(true);
     } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
+      if (mountedRef.current) setLoaded(true);
     }
   }
 
@@ -150,19 +133,7 @@ export default function HomePage() {
     { key: '30d', label: '30วัน' },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-500 rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-slate-500">กำลังโหลดข้อมูล...</p>
-          <p className="text-xs text-slate-400 mt-2">กรุณารอสักครู่</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loadError && !stats) {
+  if (loadError && !loaded) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center max-w-md">
@@ -186,6 +157,14 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6">
+      {/* Loading indicator (top bar) */}
+      {!loaded && (
+        <div className="flex items-center justify-center gap-2 py-2 text-sm text-emerald-600 bg-emerald-50 rounded-lg border border-emerald-200">
+          <div className="w-4 h-4 border-2 border-emerald-200 border-t-emerald-500 rounded-full animate-spin"></div>
+          <span>กำลังโหลดข้อมูล...</span>
+        </div>
+      )}
+
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 rounded-2xl p-8 text-white shadow-xl">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -201,9 +180,11 @@ export default function HomePage() {
             </div>
             <div className="mt-4">
               <p className="text-3xl font-bold">
-                ฿{stats?.currentPrice?.toLocaleString('th-TH', { minimumFractionDigits: 7, maximumFractionDigits: 7 })}
+                {stats?.currentPrice != null
+                  ? `฿${stats.currentPrice.toLocaleString('th-TH', { minimumFractionDigits: 7, maximumFractionDigits: 7 })}`
+                  : 'กำลังโหลด...'}
               </p>
-              <p className={`text-sm mt-1 ${stats?.priceChange24h?.startsWith('+') ? 'text-emerald-200' : 'text-red-200'}`}>
+              <p className={`text-sm mt-1 ${!stats ? 'text-emerald-200' : stats?.priceChange24h?.startsWith('+') ? 'text-emerald-200' : 'text-red-200'}`}>
                 {stats?.priceChange24h || '+0.00'}% (24ชม.)
               </p>
             </div>
@@ -211,7 +192,7 @@ export default function HomePage() {
           <div className="grid grid-cols-2 gap-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 w-full md:w-auto">
             <div className="text-center px-4">
               <p className="text-emerald-100 text-xs">Market Cap</p>
-              <p className="font-bold text-lg">฿{stats?.marketCap ? (stats.marketCap / 1e6).toFixed(1) : '0'}M</p>
+              <p className="font-bold text-lg">฿{stats?.marketCap ? (stats.marketCap / 1e6).toFixed(1) : '-'}M</p>
             </div>
             <div className="text-center px-4">
               <p className="text-emerald-100 text-xs">ปริมาณ 24ชม.</p>
@@ -258,15 +239,15 @@ export default function HomePage() {
         <div className="space-y-4">
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
             <h3 className="text-sm font-medium text-slate-500 mb-1">ราคาล่าสุด</h3>
-            <p className="text-2xl font-bold text-slate-800">฿{stats?.currentPrice?.toFixed(7)}</p>
+            <p className="text-2xl font-bold text-slate-800">{stats?.currentPrice != null ? `฿${stats.currentPrice.toFixed(7)}` : 'กำลังโหลด...'}</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
             <h3 className="text-sm font-medium text-slate-500 mb-1">ผู้ใช้ทั้งหมด</h3>
-            <p className="text-2xl font-bold text-slate-800">{stats?.totalUsers?.toLocaleString() || '0'}</p>
+            <p className="text-2xl font-bold text-slate-800">{stats?.totalUsers?.toLocaleString() || '-'}</p>
           </div>
           <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
             <h3 className="text-sm font-medium text-slate-500 mb-1">ปริมาณการซื้อขายวันนี้</h3>
-            <p className="text-2xl font-bold text-slate-800">฿{stats?.volumeToday?.toLocaleString('th-TH', { minimumFractionDigits: 2 }) || '0'}</p>
+            <p className="text-2xl font-bold text-slate-800">{stats?.volumeToday != null ? `฿${stats.volumeToday.toLocaleString('th-TH', { minimumFractionDigits: 2 })}` : '-'}</p>
           </div>
           <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl p-5 shadow-sm text-white">
             <h3 className="text-sm font-medium text-emerald-100 mb-1">พร้อมเริ่มเทรด?</h3>
