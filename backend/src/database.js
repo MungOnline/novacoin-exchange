@@ -574,10 +574,15 @@ async function initializeDatabase() {
     }
 
     // Create tables
+    // IMPORTANT: Remove comment lines BEFORE splitting by ; so comments
+    // don't get attached to the first statement and filter it out.
     const statements = SCHEMA_SQL
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))     // remove comment lines
+      .join('\n')
       .split(';')
       .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .filter(s => s.length > 0);
 
     for (const stmt of statements) {
       await pool.query(stmt);
@@ -624,11 +629,14 @@ async function initializeDatabase() {
 
     sqliteDb.run('PRAGMA foreign_keys = ON;');
 
-    // Create tables
+    // Create tables (remove comment lines BEFORE splitting by ;)
     const statements = SCHEMA_SQL
+      .split('\n')
+      .filter(line => !line.trim().startsWith('--'))
+      .join('\n')
       .split(';')
       .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+      .filter(s => s.length > 0);
 
     for (const stmt of statements) {
       if (stmt.length > 0) sqliteDb.run(stmt);
