@@ -74,6 +74,8 @@ app.use('/api', (req, res, next) => {
 // On Vercel, /var/task is read-only — use /tmp for uploads
 const UPLOAD_DIR = process.env.UPLOAD_DIR || 
   (process.env.VERCEL ? '/tmp/uploads' : path.join(__dirname, '..', 'uploads'));
+// Set env so other modules (multer in routes) can access it
+process.env.UPLOAD_DIR = UPLOAD_DIR;
 try {
   if (!fs.existsSync(UPLOAD_DIR)) {
     fs.mkdirSync(UPLOAD_DIR, { recursive: true });
