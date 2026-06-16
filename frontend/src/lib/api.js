@@ -276,6 +276,11 @@ class ApiClient {
     return this.request('/admin/settings');
   }
 
+  // Get slip image data (base64) for a deposit
+  getDepositSlip(depositId) {
+    return this.request(`/deposit/${depositId}/slip`);
+  }
+
   // Bank QR Code management
   uploadDepositQr(formData) {
     return this.request('/admin/deposit/qrcode', {

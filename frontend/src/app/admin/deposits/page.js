@@ -13,6 +13,7 @@ export default function AdminDeposits() {
   const [status, setStatus] = useState('pending');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [slipModal, setSlipModal] = useState(null); // { id, data, filename } | null
 
   useEffect(() => {
     if (!authLoading && (!isAuthenticated || !isAdmin)) {
@@ -58,6 +59,15 @@ export default function AdminDeposits() {
       alert(err.message);
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleViewSlip = async (depositId, filename) => {
+    try {
+      const data = await api.getDepositSlip(depositId);
+      setSlipModal({ id: depositId, data: data.slipData, filename: data.slipFilename || filename });
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -134,13 +144,12 @@ export default function AdminDeposits() {
                     </td>
                     <td className="px-4 py-3 text-center">
                       {dep.slip_filename ? (
-                        <a
-                          href={`/uploads/${dep.slip_filename}`}
-                          target="_blank"
-                          className="text-xs text-emerald-600 hover:text-emerald-700 underline"
+                        <button
+                          onClick={() => handleViewSlip(dep.id, dep.slip_filename)}
+                          className="text-xs text-emerald-600 hover:text-emerald-700 underline cursor-pointer"
                         >
                           ดูสลิป
-                        </a>
+                        </button>
                       ) : (
                         <span className="text-xs text-slate-400">ไม่มี</span>
                       )}
@@ -185,6 +194,45 @@ export default function AdminDeposits() {
           </table>
         </div>
       </div>
+
+      {/* Slip Image Modal */}
+      {slipModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setSlipModal(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-slate-200">
+              <h3 className="font-semibold text-slate-800">สลิปการโอนเงิน</h3>
+              <button
+                onClick={() => setSlipModal(null)}
+                className="text-slate-400 hover:text-slate-600 text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              {slipModal.data ? (
+                <img
+                  src={slipModal.data}
+                  alt={slipModal.filename || 'สลิปโอนเงิน'}
+                  className="w-full h-auto rounded-lg"
+                />
+              ) : (
+                <p className="text-center text-slate-400 py-8">ไม่พบรูปสลิป</p>
+              )}
+            </div>
+            {slipModal.filename && (
+              <div className="px-4 pb-4 text-xs text-slate-400 text-center">
+                {slipModal.filename}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

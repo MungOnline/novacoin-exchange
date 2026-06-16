@@ -587,6 +587,13 @@ async function initializeDatabase() {
     for (const stmt of statements) {
       await pool.query(stmt);
     }
+    // Add slip_data column if not exists (for base64-encoded slip images)
+    try {
+      await pool.query(`ALTER TABLE deposits ADD COLUMN IF NOT EXISTS slip_data TEXT`);
+    } catch (e) {
+      console.warn('⚠️ Could not add slip_data column (may already exist):', e.message);
+    }
+
     console.log('✅ PostgreSQL schema created/verified.');
 
     // Insert default settings
@@ -641,6 +648,11 @@ async function initializeDatabase() {
     for (const stmt of statements) {
       if (stmt.length > 0) sqliteDb.run(stmt);
     }
+
+    // Add slip_data column for SQLite
+    try {
+      sqliteDb.run(`ALTER TABLE deposits ADD COLUMN slip_data TEXT`);
+    } catch (e) { /* column may already exist */ }
 
     // Insert default settings (using raw db.run for initial setup)
     const defaultSettings = [

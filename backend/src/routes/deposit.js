@@ -7,17 +7,10 @@ const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 
-// Configure multer for slip uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, process.env.UPLOAD_DIR || './uploads'),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `slip_${uuidv4()}${ext}`);
-  }
-});
-
+// Use memory storage so uploaded files are stored in DB as base64
+// (Vercel /tmp is ephemeral and not shared across serverless instances)
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
   fileFilter: (req, file, cb) => {
     const allowed = /jpeg|jpg|png|gif|webp|pdf/;
@@ -65,10 +58,16 @@ router.post('/create', authenticate, upload.single('slip'), async (req, res) => 
     }
 
     const depositId = uuidv4();
-    const slipFilename = req.file ? req.file.filename : null;
+    const slipFilename = req.file ? req.file.originalname : null;
 
-    await prepare('INSERT INTO deposits (id, user_id, amount, slip_filename, status) VALUES (?, ?, ?, ?, ?)')
-      .run(depositId, req.userId, parseFloat(amount), slipFilename, 'pending');
+    // Convert uploaded file buffer to base64 for DB storage
+    let slipData = null;
+    if (req.file && req.file.buffer) {
+      slipData = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
+
+    await prepare('INSERT INTO deposits (id, user_id, amount, slip_filename, slip_data, status) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(depositId, req.userId, parseFloat(amount), slipFilename, slipData, 'pending');
 
     res.status(201).json({
       message: 'คำขอเติมเงินถูกส่งแล้ว รอแอดมินตรวจสอบ',
@@ -103,6 +102,28 @@ router.get('/:id', authenticate, async (req, res) => {
     }
     res.json({ deposit });
   } catch (err) {
+    res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
+  }
+});
+
+// GET /api/deposit/:id/slip - Get slip image for a deposit
+router.get('/:id/slip', authenticate, async (req, res) => {
+  try {
+    const deposit = await prepare('SELECT id, user_id, slip_data, slip_filename FROM deposits WHERE id = ?')
+      .get(req.params.id);
+    if (!deposit || !deposit.slip_data) {
+      return res.status(404).json({ error: 'ไม่พบสลิป' });
+    }
+
+    // Only admin or the deposit owner can view the slip
+    const user = await prepare('SELECT is_admin FROM users WHERE id = ?').get(req.userId);
+    if (!user || (!user.is_admin && deposit.user_id !== req.userId)) {
+      return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึง' });
+    }
+
+    res.json({ slipData: deposit.slip_data, slipFilename: deposit.slip_filename });
+  } catch (err) {
+    console.error('Get slip error:', err);
     res.status(500).json({ error: 'เกิดข้อผิดพลาดภายในระบบ' });
   }
 });
